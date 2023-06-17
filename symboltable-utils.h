@@ -44,15 +44,15 @@ void setHead(symbol_table *node);
 symbol_table *addNode(char *str, symbol_table *lastNode);
 void printID(symbol_table *str);
 void printTable();
-char* varType(struct variable data);
+char *varType(struct variable data);
 void recPrintTable(symbol_table *node,int nodeNo);
 
 /*Assignment functions (they are variants of the same function)*/
-void completeTypedAssign(char *type, char *id, struct variable expression);
-void completeTypedShorthand(char *type, char *id, char* shorthand, struct variable expression);
-void completeUntypedAssign(char *id, struct variable expression);
-void completeUntypedShorthand(char *id, char *shorthand, struct variable expression);
-void typedAssign(char *type, char *id);
+symbol_table *completeTypedAssign(char *type, char *id, struct variable expression);
+symbol_table *completeTypedShorthand(char *type, char *id, char* shorthand, struct variable expression);
+symbol_table *completeUntypedAssign(char *id, struct variable expression);
+symbol_table *completeUntypedShorthand(char *id, char *shorthand, struct variable expression);
+symbol_table *typedAssign(char *type, char *id);
 
 /* Comparison and equality functions */
 bool greaterNum(struct variable, struct variable);
@@ -230,7 +230,7 @@ void printResult(struct variable var){
     }
 }
 
-void completeTypedAssign (char* type, char* id, struct  variable expression){
+symbol_table * completeTypedAssign (char* type, char* id, struct  variable expression){
     symbol_table *node = findOrAdd(id);
     if(node->type_declared==false){
         if(node->initialised==false){ //node stores no value
@@ -333,9 +333,10 @@ void completeTypedAssign (char* type, char* id, struct  variable expression){
             }
         }
     }
+    return node;
 
 }
-void completeTypedShorthand(char *type, char *id, char* shorthand, struct variable expression){
+symbol_table * completeTypedShorthand(char *type, char *id, char* shorthand, struct variable expression){
     //complete assignment
     symbol_table *node = findOrAdd(id);
     if(node->type_declared==false){
@@ -486,9 +487,9 @@ void completeTypedShorthand(char *type, char *id, char* shorthand, struct variab
             }
         }
     }
-
+    return node;
 }
-void completeUntypedAssign(char *id, struct variable expression){
+symbol_table * completeUntypedAssign(char *id, struct variable expression){
     symbol_table *node = findOrAdd(id);
     if(node->type_declared==false){
         if(node->initialised==false){
@@ -559,9 +560,9 @@ void completeUntypedAssign(char *id, struct variable expression){
             }
         }
     }
-
+    return node;
 }
-void completeUntypedShorthand(char *id, char *shorthand, struct variable expression){
+symbol_table * completeUntypedShorthand(char *id, char *shorthand, struct variable expression){
     //untyped assignment, no type specified
     symbol_table *node = findOrAdd(id);
     if(node->type_declared==false){
@@ -680,9 +681,9 @@ void completeUntypedShorthand(char *id, char *shorthand, struct variable express
             }
         }
     }
-
+    return node;
 }
-void typedAssign(char *type, char *id){
+symbol_table * typedAssign(char *type, char *id){
     symbol_table *node = findOrAdd(id);
     if(node->type_declared==0){
         if(strcmp("integer",type)==0){
@@ -701,7 +702,7 @@ void typedAssign(char *type, char *id){
             printf("Info: the variable you specified is already defined with the same type!\n");
         }
     }
-    //if var has already a type specified (and is a different one) print error, else do nothing
+    return node;
 }
 
 /* ARITHMETIC FUNCTIONS

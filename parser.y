@@ -21,6 +21,7 @@ int yylex(void);
        	int integer_val;			//integer
        	bool truth;			//boolean
        	struct variable variable_val;
+       	symbol_table *node;
        }
 
 %token <integer_val> INTEGER_VAL
@@ -53,9 +54,11 @@ int yylex(void);
 %token PRINT
 
 %type <variable_val> expr
+%type <variable_val> val
 %type <type_var> type
 %type <truth> cond
 %type <type_var> shorthand
+%type <node> ass
 
 %left OR
 %left AND
@@ -92,12 +95,12 @@ stmt : expr		{printResult($1);}
 // The code aims to handle all cases possible when defining a variable, in this way it would be possible to define a variable without having to
 // explicitly define its type and/or value, which could be defined in a second occasion. Assigning a value to the variable infers also the type
 // intended for the variable itself. Once the variable has received its type, it is no longer possible to overwrite it.*/
-ass : type ID  '=' expr			{completeTypedAssign($1,$2,$4);	}
-	| type ID shorthand expr 	{completeTypedShorthand($1,$2,$3,$4);}
-	| ID '=' expr   		{completeUntypedAssign($1,$3);}
-	| ID shorthand expr 		{completeUntypedShorthand($1,$2,$3);}
-	| type ID 			{typedAssign($1,$2);}
-	| ID          			{findOrAdd($1);}
+ass : type ID  '=' expr			{$$ = completeTypedAssign($1,$2,$4);	}
+	| type ID shorthand val 	{$$ = completeTypedShorthand($1,$2,$3,$4);}
+	| ID '=' expr   		{$$ = completeUntypedAssign($1,$3);}
+	| ID shorthand val 		{$$ = completeUntypedShorthand($1,$2,$3);}
+	| type ID 			{$$ = typedAssign($1,$2);}
+	| ID          			{$$ = findOrAdd($1);}
 	;
 
 type : INTEGER	{$$ = "integer";}
@@ -148,32 +151,24 @@ expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);}
                                 }else {
                                 	fprintf(stderr,"ERROR: it is not currently possible to decrement strings");
                                         }}
-      | INTEGER_VAL    	{struct variable data;
-      			 data.type = INTEGER_TYPE;
-      			 data.integer_val = $1;
-      			 $$ = data;}
-      | DOUBLE_VAL	{struct variable data;
-      			 data.type = DOUBLE_TYPE;
-      			 data.double_val = $1;
-      			 $$ = data;}
-      | STRING_VAL	{struct variable data;
-			data.type = STRING_TYPE;
-			data.string_val = $1;
-			$$ = data;}
-      | ID		{symbol_table *node = findOrAdd($1);
-      			struct variable data;
-      			if(node->type_declared==true){
-      				if(node->initialised==true){
-      					data = node->value;
-      				} else {
-      					printf("Warning: the variable %s in the arithmetic operation is not initialised!",node->id);
-      				}
-      			} else {
-      				printf("Warning: the variable %s in the arithmetic operation has no type defined (and is not initialised)!",node->id);
-      			}
-      			$$=data;
-      			}
+      | val
       ;
+val: INTEGER_VAL    	{struct variable data;
+           			 data.type = INTEGER_TYPE;
+           			 data.integer_val = $1;
+           			 $$ = data;}
+           | DOUBLE_VAL	{struct variable data;
+           			 data.type = DOUBLE_TYPE;
+           			 data.double_val = $1;
+           			 $$ = data;}
+           | STRING_VAL	{struct variable data;
+     			data.type = STRING_TYPE;
+     			data.string_val = $1;
+     			$$ = data;}
+           | ass		{struct variable data;
+           			data = $1->value;
+           			$$= data;}
+           ;
 
 ifstmt	: IF '(' cond ')' THEN '{' STRING_VAL '}' { if($3){printf("%s\n", $7);}; }
 	;
