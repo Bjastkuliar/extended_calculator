@@ -23,7 +23,6 @@ print       {return PRINT;}
 
 if          {return IF;}
 then        {return THEN;}
-while       {return WHILE;}
 
 type        {return TYPE;}
 double		{ return DOUBLE; }

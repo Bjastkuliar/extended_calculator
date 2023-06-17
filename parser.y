@@ -21,6 +21,7 @@ int yylex(void);
        	int integer_val;			//integer
        	bool truth;			//boolean
        	struct variable variable_val;
+       	symbol_table *node;
        }
 
 %token <integer_val> INTEGER_VAL
@@ -34,7 +35,6 @@ int yylex(void);
 
 %token IF
 %token THEN
-%token WHILE
 
 %token OR
 %token AND
@@ -54,10 +54,11 @@ int yylex(void);
 %token PRINT
 
 %type <variable_val> expr
+%type <variable_val> val
 %type <type_var> type
 %type <truth> cond
-%type <variable_val> string
 %type <type_var> shorthand
+%type <node> ass
 
 %left OR
 %left AND
@@ -80,10 +81,12 @@ line  : '\n' stmt
 
 /*The stmt (shorthand for "statement") production is in charge of "determining" what the user is trying to do, whether
 //to compute an expression, to assingn a (possibly typed) variable or to execute a loop or a conditional clause*/
-stmt : expr		{if($1.fromID==1)printf("--ERROR--\nPlease use PRINT function for variables\n"); else{printResult($1);}}
+stmt : expr		{printResult($1);}
 	| PRINT		{printTable();}
 	| PRINT ID	{printNode(findOrAdd($2));}
-	| WHILE		{printf("While detected");}
+	| TYPE ID	{
+			symbol_table *node = findOrAdd($2);
+			printf("Type of %s: %s",node->id,varType(node->value));}
      	| ass
      	| cond		{printf("Result: %s\n", $1 ? "true" : "false"); }
      	| ifstmt
@@ -92,423 +95,12 @@ stmt : expr		{if($1.fromID==1)printf("--ERROR--\nPlease use PRINT function for v
 // The code aims to handle all cases possible when defining a variable, in this way it would be possible to define a variable without having to
 // explicitly define its type and/or value, which could be defined in a second occasion. Assigning a value to the variable infers also the type
 // intended for the variable itself. Once the variable has received its type, it is no longer possible to overwrite it.*/
-ass : type ID  '=' expr			{//complete assignment
-			symbol_table *node = findOrAdd($2);
-			if(node->type_declared==false){
-				if(node->initialised==false){ //node stores no value
-					node->initialised=true;
-                                	node->type_declared=true;
-					if($1=="integer") {
-						node->value.type=INTEGER_TYPE;
-						if($4.type==INTEGER_TYPE){
-							node->value.integer_val=$4.integer_val;
-						} else if ($4.type==DOUBLE_TYPE){
-							printf("Warning: casting double to integer, approximation may occur!\n");
-							node->value.integer_val=(int)$4.double_val;
-						} else {
-							printf("Error: could not recognise the type of the expression!\n");
-						}
-					} else if($1=="double") {
-						node->value.type=DOUBLE_TYPE;
-						if($4.type==DOUBLE_TYPE){
-							node->value.double_val=$4.double_val;
-						} else if ($4.type==INTEGER_TYPE){
-							node->value.double_val=(double)$4.integer_val;
-						} else {
-							printf("Error: could not recognise the type of the expression!\n");
-						}
-					} else {
-						printf("Error: could not recognise the type declared!\n");
-					}
-				} else{//node already stores a value
-					//node has no type defined but it stores a value, this should be an impossible case
-					printf("ERROR: The node %s currently stores a value, but has no type defined!\n",node->id);
-					exit(1);
-				}
-			} else {//node has a type
-				if(node->initialised==false){//node stores no value
-					if($1=="integer"){
-						if(node->value.type==INTEGER_TYPE){
-							if($4.type==INTEGER_TYPE){ //everything is integer, assign the value
-								node->initialised=true;
-								node->value.integer_val=$4.integer_val;
-							} else if($4.type==DOUBLE_TYPE){ //cast double value to int with warning
-								node->initialised=true;
-								printf("Warning: casting double to integer, approximation may occur!\n");
-                                                                node->value.integer_val=(int)$4.double_val;
-							} else {
-								printf("Error: could not recognise the type of the expression!\n");
-							}
-						} else {
-							printf("Error: the type of the node does not match the type declared!\n");
-						}
-					} else if($1=="double"){
-						if(node->value.type==DOUBLE_TYPE){
-							if($4.type==DOUBLE_TYPE){//everything is double, assign the value
-								node->initialised=true;
-								node->value.double_val=$4.double_val;
-							} else if($4.type==INTEGER_TYPE){
-								node->initialised=true;
-                                                                node->value.double_val=(double)$4.integer_val;
-							} else {
-								printf("Error: could not recognise the type of the expression!\n");
-							}
-						} else {
-							printf("Error: the type of the node does not match the type declared!\n");
-						}
-					} else {
-						printf("ERROR: couldn't recognise the specified type declaration!\n");
-						exit(1);
-					}
-				} else {//node already stores a value
-					if($1=="integer"){
-						if(node->value.type==INTEGER_TYPE){
-							if($4.type==INTEGER_TYPE){ //everything is integer, assign the value
-								node->initialised=true;
-								node->value.integer_val=$4.integer_val;
-							} else if($4.type==DOUBLE_TYPE){
-								node->initialised=true;
-								node->value.integer_val=(int)$4.double_val;
-							} else {
-								printf("Error: could not recognise the type of the expression!\n");
-							}
-						} else {
-							printf("Error: the type of the node does not match the type declared!\n");
-						}
-					} else if($1=="double"){
-						if(node->value.type==DOUBLE_TYPE){
-							if($4.type==DOUBLE_TYPE){//everything is double, assign the value
-								node->initialised=true;
-								node->value.double_val=$4.double_val;
-							} else if ($4.type == INTEGER_TYPE){
-								node->initialised=true;
-								node->value.double_val=(double)$4.integer_val;
-							} else {
-								printf("Error: could not recognise the type of the expression!\n");
-							}
-						} else {
-							printf("Error: the type of the node does not match the type declared!\n");
-						}
-					} else {
-						printf("ERROR: couldn't recognise the specified type declaration!\n");
-						exit(1);
-					}
-				}
-			}
-		}
-	| type ID shorthand expr 	{//complete assignment
-                                 			symbol_table *node = findOrAdd($2);
-                                 			if(node->type_declared==false){
-                                 				if(node->initialised==false){ //node stores no value
-                                 					node->initialised=true;
-                                                                 	node->type_declared=true;
-                                 					if($1=="integer") {
-                                 						node->value.type=INTEGER_TYPE;
-                                 						if($4.type==INTEGER_TYPE){
-                                 							node->value.integer_val=$4.integer_val;
-                                 						} else if ($4.type==DOUBLE_TYPE){
-                                 							printf("Warning: casting double to integer, approximation may occur!\n");
-                                 							node->value.integer_val=(int)$4.double_val;
-                                 						} else {
-                                 							printf("Error: could not recognise the type of the expression!\n");
-                                 						}
-                                 					} else if($1=="double") {
-                                 						node->value.type=DOUBLE_TYPE;
-                                 						if($4.type==DOUBLE_TYPE){
-                                 							node->value.double_val=$4.double_val;
-                                 						} else if ($4.type==INTEGER_TYPE){
-                                 							node->value.double_val=(double)$4.integer_val;
-                                 						} else {
-                                 							printf("Error: could not recognise the type of the expression!\n");
-                                 						}
-                                 					} else {
-                                 						printf("Error: could not recognise the type declared!\n");
-                                 					}
-                                 					printf("Warning: the variable you declared was not holding any value! Assigning the value to the variable itself\n");
-                                 				} else{//node already stores a value
-                                 					//node has no type defined but it stores a value, this should be an impossible case
-                                 					printf("ERROR: The node %s currently stores a value, but has no type defined!\n",node->id);
-                                 					exit(1);
-                                 				}
-                                 			} else {//node has a type
-                                 				if(node->initialised==false){//node stores no value
-                                 					if($1=="integer"){
-                                 						if(node->value.type==INTEGER_TYPE){
-                                 							if($4.type==INTEGER_TYPE){ //everything is integer, assign the value
-                                 								node->initialised=true;
-                                 								node->value.integer_val=$4.integer_val;
-                                 							} else if($4.type==DOUBLE_TYPE){ //cast double value to int with warning
-                                 								node->initialised=true;
-                                 								printf("Warning: casting double to integer, approximation may occur!\n");
-                                                                                                 node->value.integer_val=(int)$4.double_val;
-                                 							} else {
-                                 								printf("Error: could not recognise the type of the expression!\n");
-                                 							}
-                                 						} else {
-                                 							printf("Error: the type of the node does not match the type declared!\n");
-                                 						}
-                                 					} else if($1=="double"){
-                                 						if(node->value.type==DOUBLE_TYPE){
-                                 							if($4.type==DOUBLE_TYPE){//everything is double, assign the value
-                                 								node->initialised=true;
-                                 								node->value.double_val=$4.double_val;
-                                 							} else if($4.type==INTEGER_TYPE){
-                                 								node->initialised=true;
-                                                                                                 node->value.double_val=(double)$4.integer_val;
-                                 							} else {
-                                 								printf("Error: could not recognise the type of the expression!\n");
-                                 							}
-                                 						} else {
-                                 							printf("Error: the type of the node does not match the type declared!\n");
-                                 						}
-                                 					} else {
-                                 						printf("ERROR: couldn't recognise the specified type declaration!\n");
-                                 						exit(1);
-                                 					}
-                                 					printf("Warning: the variable you declared was not holding any value! Assigning the value to the variable itself\n");
-                                 				} else {//node already stores a value
-                                 					if($1=="integer"){
-                                 						if(node->value.type==INTEGER_TYPE){
-                                 							node->initialised=true;
-                                 							if($4.type==INTEGER_TYPE){ //everything is integer, assign the value
-                                 								int tmp = (int)node->value.integer_val;
-                                 								if($3=="multass"){
-                                 									node->value.integer_val=tmp * $4.integer_val;
-                                 								} else if($3=="addass"){
-                                 									node->value.integer_val=tmp + $4.integer_val;
-                                 								} else if($3=="subass"){
-                                 									node->value.integer_val=tmp - $4.integer_val;
-                                 								} else if($3=="divass"){
-                                 									node->value.integer_val=tmp / $4.integer_val;
-                                 								} else {
-                                 									printf("Error: Could not recognise the shorthand operation!\n");
-                                 								}
-                                 							} else if($4.type==DOUBLE_TYPE){
-                                 								printf("Warning: casting double to integer, approximation may occur!\n");
-                                 								int tmp = (int)node->value.integer_val;
-                                 								if($3=="multass"){
-													node->value.integer_val=(int)tmp * $4.double_val;
-												} else if($3=="addass"){
-													node->value.integer_val=(int)tmp + $4.double_val;
-												} else if($3=="subass"){
-													node->value.integer_val=(int)tmp - $4.double_val;
-												} else if($3=="divass"){
-													node->value.integer_val=(int)tmp / $4.double_val;
-												} else {
-													printf("Error: Could not recognise the shorthand operation!\n");
-												}
-                                 							} else {
-                                 								node->initialised = false;
-                                 								printf("Error: could not recognise the type of the expression!\n");
-                                 							}
-                                 						} else {
-                                 							printf("Error: the type of the node does not match the type declared!\n");
-                                 						}
-                                 					} else if($1=="double"){
-                                 						if(node->value.type==DOUBLE_TYPE){
-                                 							if($4.type==DOUBLE_TYPE){//everything is double, assign the value
-                                 								node->initialised=true;
-                                 								double tmp =node->value.double_val;
-                                 								if($3=="multass"){
-													node->value.double_val=tmp * $4.double_val;
-												} else if($3=="addass"){
-													node->value.double_val=tmp + $4.double_val;
-												} else if($3=="subass"){
-													node->value.double_val=tmp - $4.double_val;
-												} else if($3=="divass"){
-													node->value.double_val=tmp / $4.double_val;
-												} else {
-													printf("Error: Could not recognise the shorthand operation!\n");
-												}
-                                 							} else if ($4.type == INTEGER_TYPE){
-                                 								node->initialised=true;
-                                 								double tmp =node->value.double_val;
-                                 								if($3=="multass"){
-													node->value.double_val=(double)tmp * $4.integer_val;
-												} else if($3=="addass"){
-													node->value.double_val=(double)tmp + $4.integer_val;
-												} else if($3=="subass"){
-													node->value.double_val=(double)tmp - $4.integer_val;
-												} else if($3=="divass"){
-													node->value.double_val=(double)tmp / $4.integer_val;
-												} else {
-													printf("Error: Could not recognise the shorthand operation!\n");
-												}
-                                 							} else {
-                                 								printf("Error: could not recognise the type of the expression!\n");
-                                 							}
-                                 						} else {
-                                 							printf("Error: the type of the node does not match the type declared!\n");
-                                 						}
-                                 					} else {
-                                 						printf("ERROR: couldn't recognise the specified type declaration!\n");
-                                 						exit(1);
-                                 					}
-                                 				}
-                                 			}
-                                 		}
-	| ID '=' expr   		{//untyped assignment, no type specified
-			symbol_table *node = findOrAdd($1);
-			if(node->type_declared==false){
-				if(node->initialised==false){
-					//node has neither type defined nor it stores a value
-					if($3.type==INTEGER_TYPE){
-						node->initialised=true;
-						node->value.type=INTEGER_TYPE;
-						node->value.integer_val=$3.integer_val;
-						node->type_declared=true;
-					} else if($3.type == DOUBLE_TYPE){
-						node->initialised=true;
-                                                node->value.type=DOUBLE_TYPE;
-                                                node->value.double_val=$3.double_val;
-                                                node->type_declared=true;
-					} else {
-						printf("Error: the type of the expression could not be recognised!\n");
-						exit(1);
-					}
-				} else {
-					//node has no type defined but it stores a value, this should be an impossible case
-					printf("Error: The node %s currently stores a value, but has no type defined!\n",node->id);
-					exit(1);
-				}
-			} else {
-				if(node->initialised==0){
-        				//node has type defined but it stores no value
-					if(node->value.type==INTEGER_TYPE){
-						if($3.type==INTEGER_TYPE){
-							node->initialised=true;
-                                                        node->value.integer_val=$3.integer_val;
-						} else if ($3.type == DOUBLE_TYPE){
-							node->initialised = true;
-							node->value.integer_val=(int)$3.double_val;
-							printf("Warning: casting the double result to an integer!");
-						} else {
-							printf("Error: type mismatch! Node %s has type %i (integer), but the expression has type %i instead!\n",node->id,node->value.type,$3.type);
-						}
-					} else if(node->value.type == DOUBLE_TYPE){
-						if($3.type==INTEGER_TYPE){
-                                                	node->initialised=true;
-                                                        node->value.double_val=(double)$3.integer_val;
-        					} else if($3.type == DOUBLE_TYPE){
-        						node->initialised=true;
-        						node->value.double_val= $3.double_val;
-        					} {
-                                                	printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",node->id,node->value.type,$3.type);
-                                                }
-					} else {
-						printf("Error: the type of node %s could not be recognised!\n", node->id);
-						exit(1);
-					}
-        			} else {
-        				//node has type defined and it stores a value
-        				if(node->value.type==$3.type){
-        					if(node->value.type==INTEGER_TYPE){
-        						node->value.integer_val=$3.integer_val;
-        						printf("Info: Updated variable %s to the new value %i",node->id,$3.integer_val);
-        					} else if(node->value.type==DOUBLE_TYPE){
-        						node->value.double_val=$3.double_val;
-        						printf("Info: Updated variable %s to the new value %f",node->id,$3.double_val);
-        					} else {
-        						printf("Error: the type of node %s could not be recognised!\n", node->id);
-                                                        exit(1);
-        					}
-        				} else {
-        					printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",node->id,node->value.type,$3.type);
-        					exit(1);
-        				}
-        			}
-			}
-			}
-	| ID shorthand expr 		{//untyped assignment, no type specified
-                                        			symbol_table *node = findOrAdd($1);
-                                        			if(node->type_declared==false){
-                                        				if(node->initialised==false){
-                                        					//node has neither type defined nor it stores a value
-                                        					printf("Warning: the variable declared has no value stored, assigning the result instead!");
-                                        					if($3.type==INTEGER_TYPE){
-                                        						node->initialised=true;
-                                        						node->value.type=INTEGER_TYPE;
-                                        						node->value.integer_val=$3.integer_val;
-                                        						node->type_declared=true;
-                                        					} else if($3.type == DOUBLE_TYPE){
-                                        						node->initialised=true;
-                                                                                        node->value.type=DOUBLE_TYPE;
-                                                                                        node->value.double_val=$3.double_val;
-                                                                                        node->type_declared=true;
-                                        					} else {
-                                        						printf("Error: the type of the expression could not be recognised!\n");
-                                        						exit(1);
-                                        					}
-                                        				} else {
-                                        					//node has no type defined but it stores a value, this should be an impossible case
-                                        					printf("Error: The node %s currently stores a value, but has no type defined!\n",node->id);
-                                        					exit(1);
-                                        				}
-                                        			} else {
-                                        				if(node->initialised==false){
-                                                				//node has type defined but it stores no value
-                                        					if(node->value.type==INTEGER_TYPE){
-                                        						if($3.type==INTEGER_TYPE){
-                                        							node->initialised=true;
-                                                                                                node->value.integer_val=$3.integer_val;
-                                        						} else {
-                                        							printf("Error: type mismatch! Node %s has type %i (integer), but the expression has type %i instead!\n",node->id,node->value.type,$3.type);
-                                        						}
-                                        					} else if(node->value.type == DOUBLE_TYPE){
-                                        						if($3.type==INTEGER_TYPE){
-                                                                                        	node->initialised=true;
-                                                                                                node->value.double_val=$3.double_val;
-                                                					} else {
-                                                                                        	printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",node->id,node->value.type,$3.type);
-                                                                                        }
-                                        					} else {
-                                        						printf("Error: the type of node %s could not be recognised!\n", node->id);
-                                        						exit(1);
-                                        					}
-                                                			} else {
-                                                				//node has type defined and it stores a value
-                                                				if(node->value.type==$3.type){
-                                                					if(node->value.type==INTEGER_TYPE){
-                                                						node->value.integer_val=$3.integer_val;
-                                                						printf("Info: Updated variable %s to the new value %i",node->id,$3.integer_val);
-                                                					} else if(node->value.type==DOUBLE_TYPE){
-                                                						node->value.double_val=$3.double_val;
-                                                						printf("Info: Updated variable %s to the new value %f",node->id,$3.double_val);
-                                                					} else {
-                                                						printf("Error: the type of node %s could not be recognised!\n", node->id);
-                                                                                                exit(1);
-                                                					}
-                                                				} else {
-                                                					printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",node->id,node->value.type,$3.type);
-                                                					exit(1);
-                                                				}
-                                                			}
-                                        			}
-                                        			}
-	| type ID 			{//typed uninitialized assignment, add to table and specify type
-			symbol_table *node = findOrAdd($2);
-			if(node->type_declared==0){
-				if($1=="integer"){
-					printf("Set the variable type to integer\n");
-					node->value.type=INTEGER_TYPE;
-				} else if($1=="double"){
-					node->value.type=DOUBLE_TYPE;
-					printf("Set the variable type to double\n");
-				}
-				node->type_declared=1;
-			} else {
-				char* node_type = varType(node->value);
-				if(strcmp(node_type,$1)==0){
-					printf("Error: the variable you specified is already defined with type %s!\n",node_type);
-				} else {
-					printf("Info: the variable you specified is already defined with the same type!\n");
-				}
-			}
-			//if var has already type specified (and is a different one) print error, else do nothing
-			}
-	| ID          			{//uninitialized assignment, simply add to the table
-          			symbol_table *node = findOrAdd($1);
-          			}
+ass : type ID  '=' expr			{$$ = completeTypedAssign($1,$2,$4);	}
+	| type ID shorthand val 	{$$ = completeTypedShorthand($1,$2,$3,$4);}
+	| ID '=' expr   		{$$ = completeUntypedAssign($1,$3);}
+	| ID shorthand val 		{$$ = completeUntypedShorthand($1,$2,$3);}
+	| type ID 			{$$ = typedAssign($1,$2);}
+	| ID          			{$$ = findOrAdd($1);}
 	;
 
 type : INTEGER	{$$ = "integer";}
@@ -533,8 +125,7 @@ cond : expr '<' expr		{$$ = lesserNum($1,$3);}
 	;
 
 /*Arithmetic expressions*/
-expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);
-                         $$.fromID=0;}
+expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);}
       | expr '-' expr  	{if(!($1.type == STRING_TYPE || $3.type == STRING_TYPE)){
                         	$$ = sub($1,$3);
                         	} else {
@@ -560,39 +151,24 @@ expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);
                                 }else {
                                 	fprintf(stderr,"ERROR: it is not currently possible to decrement strings");
                                         }}
-      | INTEGER_VAL    	{struct variable data;
-      			 data.type = INTEGER_TYPE;
-      			 data.fromID=0;
-      			 data.integer_val = $1;
-      			 $$ = data;}
-      | DOUBLE_VAL	{struct variable data;
-      			 data.type = DOUBLE_TYPE;
-      			 data.fromID=0;
-      			 data.double_val = $1;
-      			 $$ = data;}
-      | string
-      | ID		{symbol_table *node = findOrAdd($1);
-      			struct variable data;
-      			data.fromID=1;
-      			if(node->type_declared==true){
-      				if(node->initialised==true){
-      					data = node->value;
-      				} else {
-      					printf("Warning: the variable %s in the arithmetic operation is not initialised!",node->id);
-      				}
-      			} else {
-      				printf("Warning: the variable %s in the arithmetic operation has no type defined (and is not initialised)!",node->id);
-      			}
-      			$$=data;
-      			}
+      | val
       ;
-
-string	  : STRING_VAL		{struct variable data;
- 				data.type = STRING_TYPE;
- 				data.string_val = ++$1;
- 				data.string_val[strlen(data.string_val)-1] = '\0';
- 				$$ = data;}
-	  ;
+val: INTEGER_VAL    	{struct variable data;
+           			 data.type = INTEGER_TYPE;
+           			 data.integer_val = $1;
+           			 $$ = data;}
+           | DOUBLE_VAL	{struct variable data;
+           			 data.type = DOUBLE_TYPE;
+           			 data.double_val = $1;
+           			 $$ = data;}
+           | STRING_VAL	{struct variable data;
+     			data.type = STRING_TYPE;
+     			data.string_val = $1;
+     			$$ = data;}
+           | ass		{struct variable data;
+           			data = $1->value;
+           			$$= data;}
+           ;
 
 ifstmt	: IF '(' cond ')' THEN '{' STRING_VAL '}' { if($3){printf("%s\n", $7);}; }
 	;
