@@ -1,0 +1,136 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{hyperref}
+
+\title{Formal Languages and Compilers}
+\author{Nicoletti Alberto }
+\date{a.a 2023}
+
+\begin{document}
+
+\maketitle
+\section*{General explanation}
+The following project is based on the original calculator code provided during the labs, to which a set of additional peculiarities were added:
+\begin{itemize}
+    \item numeric typing (integer and double)
+    \item additional basic operations (apart from the four original ones)
+    \item logic comparison
+    \item if statements detection
+    \item basic string support
+    \item symbol table implementation
+    \item console feedback
+\end{itemize}
+The code itself supports basic functions, although it does not cover each and every case extensively, therefore sometimes syntax errors may occur. 
+\section*{Code description}
+The code is composed of three files:
+\begin{itemize}
+    \item \textbf{lex file:} which holds the code for the lexical analyser, that is in charge of reading the input, recognising the tokens and eventually assign a value to a token if specified (for example numbers)
+    \item \textbf{yacc file:} which specifies how a specific token is used, allowing to execute different code based on the input received from the lexical analyser
+    \item \textbf{c header file:} that contains the actual code for implementing and running the symbol table as well as other additional functions (comparison/conditionals)
+\end{itemize}
+Although there is some basic code included in the \verb|.y| file, most of the code is contained in the \verb|.h| file for enhanced readability in both files.
+\subsection*{YACC productions}
+The \verb|.y| file comprises several productions that specify how the tokens produced by the lexical analyser should be handled.\\
+
+\verb|line|
+
+The line production is the start of the whole parse tree, it is merely in charge of keeping an active input feed by recursively referencing itself. It also handles the safe termination of the program, triggered by the keyword \verb|quit|.\\
+
+\verb|stmt|
+
+The statement production is in charge of sorting the current input to the correct action one would like to perform, whether this is a conditional statement, an assignment or an actual expression to be evaluated. Additionally it also handles printing, meaning that the user can type the keyword \verb|print| to print the whole symbol table, or by specifying a variable name it can print the data of that exact node. Furthermore the keyword \verb|type| allows one to print the type of a given variable.\\
+
+\verb|ass|
+
+The assignment statement is in charge of executing the whole assignment operations, whether these are simple assignments, expression assignments (where the value of the expression has to be computed beforehand) or shorthand assignments (combining the two aforementioned types in a single one). This production is supported by the \verb|type| and \verb|shorthand| statements which are simply in charge of specifying respectively the type and shorthand operator declared. Each line of these statements makes a simple call to the \verb|.h| file where the functions are specified, this is mainly because otherwise the \verb|parser.y| file would lose a lot of readability because these function behave differently depending on the different values of the parts of the assignment statement. All statements return a variable node, that way it is possible to access the variable specified (and its values), for more information see \verb|val|.\\
+
+\verb|cond|
+
+The conditional statement simply computes basic comparison operations, like greater/lesser or equality checks.\\
+
+\verb|expr|
+
+The expression statement is in charge of computing values of the given variables, once more the lines of this production make a call to the \verb|.h| file where the actual behaviour is specified for the very same reasons that were specified for the \verb|ass| production, since here too it is necessary to determine the types of the inputs and act accordingly to them. This statements also supports increment and decrement operations\newpage
+\verb|val|\\
+
+This is a simple middle-point in the parsing tree for when evaluating expression values (that is, converting strings to values of certain types, them being strings, double or integer). Furthermore this method references the \verb|ass| production in order to extrapolate the value contained in a symbol table node.\\
+
+\verb|ifstmt|
+
+Very simple if-statement implementation that simply prints the content of the body when the given condition is true.
+\section*{Input description}
+There are a few reserved words for this program:
+\begin{itemize}
+    \item \verb|int| for specifying the integer type
+    \item \verb|double| for specifying the double type
+    \item \verb|string| for specifying the string type*
+    \item \verb|if-then| for declaring an if-then clause
+    \item \verb|type| followed by an \verb|id| prints the type of the given variable
+    \item \verb|print| prints the whole symbol table or, if followed by an \verb|id|, prints a specific variable
+    \item \verb|quit| ends the input session
+\end{itemize}
+\subsubsection*{variable assignment}
+The assignment statement looks as follows:\\
+
+\verb|<type> <id> <operator> <expression>|\\
+
+The code accepts different formats for declaring a variable: 
+\begin{itemize}
+    \item \verb|type| specifies the type of the variable, if not declared the program is able to infer it from the value of the expression provided, if any. If it does not match the type of the expression, the program is able to cast (in case of integer-double) the value or otherwise throws an error;
+    \item \verb|id| stands for a variable name which is always mandatory;
+    \item \verb|operator| the operator may have two forms, either it is a simple \verb|=| which is translated in a simple assignment, or it might be a shorthand operator (like \verb|*=| or \verb|+=|), in that case the value of the node is then extrapolated, processed and then reassigned to the variable itself. In case a shorthand is used on an uninitialised node, it is treated as a simple assignment instead.
+    \verb|expression| is the value to be assigned to the specified \verb|id|, if the node already has a type, then type check (and eventual conversion) is performed. In case no type is already defined, the type of the expression is then assigned to the blank node. The expression may be another variable or an operation between variables as well. 
+\end{itemize}
+\textbf{Examples}\\
+The following are valid statements
+\begin{verbatim}
+    val
+    val = 7
+    int val = 9.0 //warning, this performs a type-cast
+    int val = 9 + val1
+\end{verbatim}
+Examples of not valid statements are
+\begin{verbatim}
+    int val = "hello"
+\end{verbatim}
+
+\subsubsection*{print statement}
+The print statement is written as follows:\\
+
+\verb|print <id>|\\
+
+As already specified before, the \verb|id| is an optional parameter, in case it is omitted the entire symbol table (which can hold up to 64 symbols) is printed in an easily readable layout.\\
+
+The following is an example of the \verb|print| command on the node \verb|val| of value \verb|9.0|.
+\begin{verbatim}
+print val
+-----------------------------------------------
+Node ID: val
+Type Declared: yes
+Value initialised: yes
+Next node: NULL
+Value: (Double value) 9.000000
+-----------------------------------------------
+\end{verbatim}
+\newpage
+\section*{How to run the program}
+\begin{enumerate}
+    \item Compile the \verb|lexer.l| file using flex:     \begin{verbatim}
+        flex -l lexer.l;
+    \end{verbatim}
+    \item compile the parser file \verb|parser.y| using yacc (or bison):
+    \begin{verbatim}
+        yacc -vd parser.y
+    \end{verbatim}
+    \item compile the outputted \verb|y.tab.c| using gcc:
+    \begin{verbatim}
+        gcc y.tab.c -ll
+    \end{verbatim}
+    \item execute the produced output file \verb|a.out|:
+    \begin{verbatim}
+        ./a.out
+    \end{verbatim}
+\end{enumerate}
+And the code should run, on Windows machines may be easier to enable the Windows Subsystem Linux (WSL) to compile the code rather than setting up all the different tools manually in the default command line.\\
+This can be done by either downloading WSL from \href{https://www.microsoft.com/store/productId/9P9TQF7MRM4R}{Microsoft store} or by enabling the virtualisation in the BIOS and then installing the \href{https://www.microsoft.com/store/productId/9PDXGNCFSCZV}{desired Linux-distro}(in my case was Ubuntu 20.04 LTS) from Microsoft Store
+\end{document}
