@@ -15,3 +15,11 @@ Instructions on how to install these can be found at the following links:
 - [gcc](https://gcc.gnu.org/install/binaries.html)
 
 **Note**: it is way easier to run everything on unix-based systems where you can install the first two with just a line of code (the third should come shipped with the system). For Windows users I'd recommend setting up [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (I did it like that)
+
+The three lines of code in order to compile the sources are:
+```
+flex -l lexer.l
+yacc parser.y
+gcc y.tab.c -ll
+```
+If you'd like to see a more detailed report on yacc issues you can add `-Wcounterexamples` after the yacc line.
