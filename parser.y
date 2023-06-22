@@ -4,7 +4,6 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <errno.h>
 #include "symboltable-utils.h"
 
 int yyerror (char const *message);
@@ -107,10 +106,10 @@ type : INTEGER	{$$ = "integer";}
 	| DOUBLE {$$ = "double";}
 	;
 
-shorthand : MULTASS		{$$="multass";}
-		| ADDASS	{$$="addass";}
-		| SUBASS	{$$="subass";}
-		| DIVASS	{$$="divass";}
+shorthand : MULTASS		{$$="multi_ass";}
+		| ADDASS	{$$="add_ass";}
+		| SUBASS	{$$="sub_ass";}
+		| DIVASS	{$$="div_ass";}
 		;
 
 /*managing conditional statements*/
@@ -132,7 +131,7 @@ expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);}
                         		fprintf(stderr,"ERROR: it is not currently possible to subtract strings");
                         		}}
       | expr '*' expr  	{if(!($1.type == STRING_TYPE || $3.type == STRING_TYPE)){
-                        	$$ = mult($1,$3);
+                        	$$ = multi($1,$3);
                         	} else {
                         		fprintf(stderr,"ERROR: it is not currently possible to multiply strings");
                         		}}
@@ -153,6 +152,9 @@ expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);}
                                         }}
       | val
       ;
+
+/*This production returns the values of the specific tokens, in the case of an identifier, it extrapolates the
+// value contained and returns that (thus the reduce/reduce conflict that happens when running yacc) */
 val: INTEGER_VAL    	{struct variable data;
            			 data.type = INTEGER_TYPE;
            			 data.integer_val = $1;
@@ -170,6 +172,7 @@ val: INTEGER_VAL    	{struct variable data;
            			$$= data;}
            ;
 
+//simple if-statement implementation that prints the string contained when the condition is true
 ifstmt	: IF '(' cond ')' THEN '{' STRING_VAL '}' { if($3){printf("%s\n", $7);}; }
 	;
 
