@@ -150,6 +150,7 @@ expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);}
                                 }else {
                                 	fprintf(stderr,"ERROR: it is not currently possible to decrement strings");
                                         }}
+      | '(' expr ')'	{$$=$2;}
       | val
       ;
 

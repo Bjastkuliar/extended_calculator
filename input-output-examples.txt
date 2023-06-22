@@ -1,0 +1,61 @@
+Input: 2 * ( 5 + 9.7) / 2
+Result: 14.700000
+
+Input int hello = 9.0
+Warning: casting double to integer, approximation may occur!
+
+//The following statements are to be executed one after the other (to demonstrate symbol-table impementation
+
+Input: print hello
+
+Info: Found a match for node hello
+-----------------------------------------------
+Node ID: hello
+Type Declared: yes
+Value initialised: yes
+Next node: NULL
+Value: (Integer value) 9
+-----------------------------------------------
+
+Input: val
+Info: Match not found, adding val to the symbol table.
+
+Input: possible = 9.0
+Info: Match not found, adding possible to the symbol table.
+
+Input: print
+PRINTING THE WHOLE SYMBOL_TABLE
+ for single nodes use print ID
+##########################################
+Printing node number 1
+##########################################
+-----------------------------------------------
+Node ID: hello
+Type Declared: yes
+Value initialised: yes
+Next node: val
+Value: (Integer value) 9
+-----------------------------------------------
+
+##########################################
+Printing node number 2
+##########################################
+-----------------------------------------------
+Node ID: val
+Type Declared: no
+Value initialised: no
+Next node: possible
+Value: NULL
+-----------------------------------------------
+
+##########################################
+Printing node number 3
+##########################################
+-----------------------------------------------
+Node ID: possible
+Type Declared: yes
+Value initialised: yes
+Next node: NULL
+Value: (Double value) 9.000000
+-----------------------------------------------
+
