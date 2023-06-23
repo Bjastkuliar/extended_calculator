@@ -13,6 +13,7 @@ LETTER   [a-zA-Z]
 ID       {LETTER}({LETTER}|{DIGIT}|\_)*
 SPECIAL [\|\?\:\\\'\,\@]
 STR    \"([ a-zA-Z0-9]*{SPECIAL}*_*)*\"
+ASSIGN {ID}[ ]*(\*|\+|-|\/)?=
 
 %%
 
@@ -35,6 +36,7 @@ string		{ return STRING; }
             return DOUBLE_VAL;}
 {STR}  {yylval.lexeme = strdup(yytext);
             return STRING_VAL;}
+
 {ID}    {yylval.lexeme = strdup(yytext);
           return ID;}
 "*="    {return MULTASS;}

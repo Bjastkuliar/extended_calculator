@@ -32,6 +32,7 @@ int yylex(void);
 %token DOUBLE
 %token INTEGER
 
+
 %token IF
 %token THEN
 
@@ -90,38 +91,6 @@ stmt : expr		{printResult($1);}
      	| cond		{printf("Result: %s\n", $1 ? "true" : "false"); }
      	| ifstmt
      	;
-/* Definition and/or assignment of a variable.
-// The code aims to handle all cases possible when defining a variable, in this way it would be possible to define a variable without having to
-// explicitly define its type and/or value, which could be defined in a second occasion. Assigning a value to the variable infers also the type
-// intended for the variable itself. Once the variable has received its type, it is no longer possible to overwrite it.*/
-ass : type ID  '=' expr			{$$ = completeTypedAssign($1,$2,$4);	}
-	| type ID shorthand val 	{$$ = completeTypedShorthand($1,$2,$3,$4);}
-	| ID '=' expr   		{$$ = completeUntypedAssign($1,$3);}
-	| ID shorthand val 		{$$ = completeUntypedShorthand($1,$2,$3);}
-	| type ID 			{$$ = typedAssign($1,$2);}
-	| ID          			{$$ = findOrAdd($1);}
-	;
-
-type : INTEGER	{$$ = "integer";}
-	| DOUBLE {$$ = "double";}
-	;
-
-shorthand : MULTASS		{$$="multi_ass";}
-		| ADDASS	{$$="add_ass";}
-		| SUBASS	{$$="sub_ass";}
-		| DIVASS	{$$="div_ass";}
-		;
-
-/*managing conditional statements*/
-cond : expr '<' expr		{$$ = lesserNum($1,$3);}
-	| expr '>' expr		{$$ = greaterNum($1,$3);}
-	| expr LEQ expr		{$$ = leqNum($1,$3);}
-	| expr GEQ expr		{$$ = geqNum($1,$3);}
-	| expr EQ expr		{$$ = equal($1,$3);}
-	| expr NEQ expr		{$$ = neqNum($1,$3);}
-	| cond AND cond 	{$$ = $1 && $3;}
-	| cond OR cond		{$$ = $1 || $3;}
-	;
 
 /*Arithmetic expressions*/
 expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);}
@@ -155,7 +124,7 @@ expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);}
       ;
 
 /*This production returns the values of the specific tokens, in the case of an identifier, it extrapolates the
-// value contained and returns that (thus the reduce/reduce conflict that happens when running yacc) */
+// value contained and returns that*/
 val: INTEGER_VAL    	{struct variable data;
            			 data.type = INTEGER_TYPE;
            			 data.integer_val = $1;
@@ -168,10 +137,45 @@ val: INTEGER_VAL    	{struct variable data;
      			data.type = STRING_TYPE;
      			data.string_val = $1;
      			$$ = data;}
-           | ass		{struct variable data;
-           			data = $1->value;
-           			$$= data;}
+           | ID		{struct variable data;
+           		symbol_table *node = findOrAdd($1);
+			data = node->value;
+			$$= data;}
            ;
+
+/* Definition and/or assignment of a variable.
+// The code aims to handle all cases possible when defining a variable, in this way it would be possible to define a variable without having to
+// explicitly define its type and/or value, which could be defined in a second occasion. Assigning a value to the variable infers also the type
+// intended for the variable itself. Once the variable has received its type, it is no longer possible to overwrite it.*/
+ass : type ID  '=' expr			{$$ = completeTypedAssign($1,$2,$4);	}
+	| type ID shorthand val 	{$$ = completeTypedShorthand($1,$2,$3,$4);}
+	| ID '=' expr   		{$$ = completeUntypedAssign($1,$3);}
+	| ID shorthand val 		{$$ = completeUntypedShorthand($1,$2,$3);}
+	| type ID 			{$$ = typedAssign($1,$2);}
+	;
+
+type : INTEGER	{$$ = "integer";}
+	| DOUBLE {$$ = "double";}
+	;
+
+shorthand : MULTASS		{$$="multi_ass";}
+		| ADDASS	{$$="add_ass";}
+		| SUBASS	{$$="sub_ass";}
+		| DIVASS	{$$="div_ass";}
+		;
+
+/*managing conditional statements*/
+cond : expr '<' expr		{$$ = lesserNum($1,$3);}
+	| expr '>' expr		{$$ = greaterNum($1,$3);}
+	| expr LEQ expr		{$$ = leqNum($1,$3);}
+	| expr GEQ expr		{$$ = geqNum($1,$3);}
+	| expr EQ expr		{$$ = equal($1,$3);}
+	| expr NEQ expr		{$$ = neqNum($1,$3);}
+	| cond AND cond 	{$$ = $1 && $3;}
+	| cond OR cond		{$$ = $1 || $3;}
+	;
+
+
 
 //simple if-statement implementation that prints the string contained when the condition is true
 ifstmt	: IF '(' cond ')' THEN '{' STRING_VAL '}' { if($3){printf("%s\n", $7);}; }

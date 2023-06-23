@@ -37,6 +37,7 @@ const int MAX_SIZE_SYMBOL_TABLE = 64; // max number of symbols in the symbol tab
 bool table_init = false;
 int numberOfNodes = 0;
 
+const char UNDEFINED_TYPE = 0;
 const char INTEGER_TYPE = 1;
 const char DOUBLE_TYPE = 2;
 const char STRING_TYPE = 3;
@@ -79,6 +80,7 @@ symbol_table *findOrAdd(char *string){
     //the symbol-table is yet to be initialised
     if (head == NULL) {
         table_init = true;
+        printf("Initialising the symbol table\n");
         head = (symbol_table *)malloc(sizeof(symbol_table));
         head->id = strdup(string);
         head->type_declared = false;
@@ -229,6 +231,8 @@ void printResult(struct variable var){
         printf("Result: %d\n",var.integer_val);
     } else if(var.type == DOUBLE_TYPE){
         printf("Result: %f\n",var.double_val);
+    } else if (var.type == UNDEFINED_TYPE){
+        printf("Result is uninitialised!\nUse the print ID command to print the information about a specific ID");
     } else {
         printf("Error while trying to print variable of type %i!\n",var.type);
         exit(1);
@@ -566,7 +570,7 @@ symbol_table * completeUntypedAssign(char *id, struct variable expression){
                 node->value.double_val = expression.double_val;
                 node->type_declared = true;
             } else {
-                printf("Error: the type of the expression could not be recognised!\n");
+                printf("ERROR: the type of the expression could not be recognised!\n");
                 exit(1);
             }
         }
@@ -729,27 +733,49 @@ struct variable sumOrConcat(struct variable n1, struct variable n2){
             result.string_val = n1.string_val;
             strcat(result.string_val, n2.string_val);
             result.type = STRING_TYPE;
-        } else if (n1.type == INTEGER_TYPE && n2.type == STRING_TYPE){
+        } else if (n1.type == INTEGER_TYPE){
             char v [20];
             sprintf(v,"%i",n1.integer_val);
             result.string_val = strcat(v,n2.string_val);
             result.type = STRING_TYPE;
-        } else if (n1.type == DOUBLE_TYPE && n2.type == STRING_TYPE){
+        } else if (n1.type == DOUBLE_TYPE){
             char v [20] = {0};
             sprintf(v,"%f",n1.double_val);
             result.string_val= strcat(v,n2.string_val);
             result.type = STRING_TYPE;
-        } else if (n1.type == STRING_TYPE && n2.type == INTEGER_TYPE){
+        } else if (n2.type == INTEGER_TYPE){
             result.string_val = n1.string_val;
             char v [20];
             sprintf(v,"%i",n2.integer_val);
             strcat(result.string_val, v);
             result.type = STRING_TYPE;
-        } else if (n1.type == STRING_TYPE && n2.type == DOUBLE_TYPE){
+        } else if (n2.type == DOUBLE_TYPE){
             result.string_val = n1.string_val;
             char v [20];
             sprintf(v,"%f",n2.double_val);
             strcat(result.string_val, v);
+            result.type = STRING_TYPE;
+        } else {
+            result.type = 8;
+        }
+    } else if (n1.type == UNDEFINED_TYPE || n2.type == UNDEFINED_TYPE){
+        if (n1.type == INTEGER_TYPE) {
+            result.integer_val = n1.integer_val;
+            result.type = INTEGER_TYPE;
+        } else if (n2.type == INTEGER_TYPE){
+            result.integer_val = n2.integer_val;
+            result.type = INTEGER_TYPE;
+        } else if (n1.type == DOUBLE_TYPE){
+            result.double_val = n1.double_val;
+            result.type = DOUBLE_TYPE;
+        } else if (n2.type == DOUBLE_TYPE) {
+            result.double_val = n1.double_val;
+            result.type = DOUBLE_TYPE;
+        } else if (n1.type == STRING_TYPE) {
+            result.string_val = n1.string_val;
+            result.type = STRING_TYPE;
+        } else if (n2.type == STRING_TYPE){
+            result.string_val = n2.string_val;
             result.type = STRING_TYPE;
         } else {
             result.type = 8;
