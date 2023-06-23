@@ -19,6 +19,7 @@ STR    \"([ a-zA-Z0-9]*{SPECIAL}*_*)*\"
 [ ]     { /* skip blanks */ }
 
 quit        {return QUIT;}
+logs        {return LOGGING;}
 print       {return PRINT;}
 
 if          {return IF;}

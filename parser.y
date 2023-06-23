@@ -52,6 +52,7 @@ int yylex(void);
 
 %token QUIT
 %token PRINT
+%token LOGGING
 
 %type <variable_val> expr
 %type <variable_val> val
@@ -76,6 +77,7 @@ int yylex(void);
 line  : '\n' stmt
 	| stmt '\n' line
 	| '\n' line
+	| LOGGING	{printf("hello");toggleLogging();}
       	| QUIT			{exit(0);}
       	;
 

@@ -69,6 +69,47 @@ bool neqNum(struct variable, struct variable);
 bool geqNum(struct variable, struct variable);
 bool leqNum(struct variable, struct variable);
 
+char logSwitch = 0;
+
+void toggleLogging(){
+    char *msg = (char*)"Logging is now ";
+    char *mode;
+    if(logSwitch){
+        logSwitch = 1;
+        mode = (char*)"enabled";
+    } else {
+        logSwitch = 0;
+        mode = (char*)"disabled";
+    }
+    char *final = strcat(msg,mode);
+    printf("Toggle: %s.\n",final);
+}
+
+void customLoggingFunction(char *message){
+    if(logSwitch){
+        printf("Info: %s",message);
+    }
+}
+
+void customWarningFunction(char *warningMessage){
+    if(logSwitch){
+        printf("Warning: %s",warningMessage);
+    }
+}
+
+void customErrorFunction(char *errorMessage){
+    if(logSwitch){
+        printf("Error: %s",errorMessage);
+    }
+}
+
+void customFatalErrorFunction(char *fatalErrorMessage){
+    if(logSwitch){
+        printf("ERROR: %s",fatalErrorMessage);
+        exit(1);
+    }
+}
+
 /*SYMBOL-TABLE IMPLEMENTATION FUNCTIONS*/
 
 /* looks for a node with the given string as ID,
@@ -94,12 +135,16 @@ symbol_table *findOrAdd(char *string){
         while (strcmp(node->id,string) != 0){
             //the current node is the last one of the table, no match was found
             if(node->next==NULL && numberOfNodes< MAX_SIZE_SYMBOL_TABLE){
-                printf("Info: Match not found, adding %s to the symbol table.\n",string);
+                if(logSwitch){
+                    printf("Info: Match not found, adding %s to the symbol table.\n",string);
+                }
                 return addNode(string,node);
             }
             node = node->next;
         }
-        printf("Info: Found a match for node %s\n",node->id);
+        if(logSwitch){
+            printf("Info: Found a match for node %s\n",node->id);
+        }
         return node;
     }
 }
@@ -123,7 +168,7 @@ symbol_table *addNode(char *str, symbol_table *lastNode){
 void printNode(symbol_table *nodeToPrint){
     /* all values to be printed are stored in strings in that way
      * even if the value itself is not initialised or is NULL,
-     * the method does not cause an error*/
+     * the method does not cause an customErrorFunction*/
     char* declared;
     char* init;
     char* nextNodeId; //the next node field may be empty
@@ -146,8 +191,9 @@ void printNode(symbol_table *nodeToPrint){
             } else if(nodeToPrint->value.type==STRING_TYPE){
                 val = strcat("(String value) %s",nodeToPrint->value.string_val);
             } else {
-                printf("Error: error while trying to access the value stored in node %s", nodeToPrint->id);
-                exit(1);
+                if(logSwitch){
+                    printf("Error: customErrorFunction while trying to access the value stored in node %s\n", nodeToPrint->id);
+                }
             }
         } else {
             val = (char *)"NULL";
@@ -184,7 +230,7 @@ void printTable(){
         symbol_table *ptr = head;
         recPrintTable(ptr,nodeNo);
     } else {
-        printf("Error: Please initialise the symbol table first by declaring one variable at least!\n");
+        customErrorFunction("Please initialise the symbol table first by declaring one variable at least!");
     }
 
 }
@@ -234,7 +280,9 @@ void printResult(struct variable var){
     } else if (var.type == UNDEFINED_TYPE){
         printf("Result is uninitialised!\nUse the print ID command to print the information about a specific ID");
     } else {
-        printf("Error while trying to print variable of type %i!\n",var.type);
+        if(logSwitch){
+            printf("Error: customErrorFunction while trying to print variable of type %i!\n",var.type);
+        }
         exit(1);
     }
 }
@@ -254,10 +302,10 @@ symbol_table * completeTypedAssign (char* type, char* id, struct  variable expre
                         node->initialised = true;
                         node->value.integer_val = (int) expression.double_val;
                     } else {
-                        printf("Error: could not recognise the type of the expression!\n");
+                        customErrorFunction("could not recognise the type of the expression!");
                     }
                 } else {
-                    printf("Error: the type of the node does not match the type declared!\n");
+                    customErrorFunction("the type of the node does not match the type declared!");
                 }
             } else if (strcmp("double", type) == 0) {
                 if (node->value.type == DOUBLE_TYPE) {
@@ -268,14 +316,13 @@ symbol_table * completeTypedAssign (char* type, char* id, struct  variable expre
                         node->initialised = true;
                         node->value.double_val = (double) expression.integer_val;
                     } else {
-                        printf("Error: could not recognise the type of the expression!\n");
+                        customErrorFunction("could not recognise the type of the expression!");
                     }
                 } else {
-                    printf("Error: the type of the node does not match the type declared!\n");
+                    customErrorFunction("the type of the node does not match the type declared!");
                 }
             } else {
-                printf("ERROR: couldn't recognise the specified type declaration!\n");
-                exit(1);
+                customFatalErrorFunction("couldn't recognise the specified type declaration!");
             }
         } else {//node stores no value
             if (strcmp("integer", type) == 0) {
@@ -285,13 +332,13 @@ symbol_table * completeTypedAssign (char* type, char* id, struct  variable expre
                         node->value.integer_val = expression.integer_val;
                     } else if (expression.type == DOUBLE_TYPE) { //cast double value to int with warning
                         node->initialised = true;
-                        printf("Warning: casting double to integer, approximation may occur!\n");
+                        customWarningFunction("casting double to integer, approximation may occur!");
                         node->value.integer_val = (int) expression.double_val;
                     } else {
-                        printf("Error: could not recognise the type of the expression!\n");
+                        customErrorFunction("could not recognise the type of the expression!");
                     }
                 } else {
-                    printf("Error: the type of the node does not match the type declared!\n");
+                    customErrorFunction("the type of the node does not match the type declared!");
                 }
             } else if (strcmp("double", type) == 0) {
                 if (node->value.type == DOUBLE_TYPE) {
@@ -302,20 +349,21 @@ symbol_table * completeTypedAssign (char* type, char* id, struct  variable expre
                         node->initialised = true;
                         node->value.double_val = (double) expression.integer_val;
                     } else {
-                        printf("Error: could not recognise the type of the expression!\n");
+                        customErrorFunction("could not recognise the type of the expression!");
                     }
                 } else {
-                    printf("Error: the type of the node does not match the type declared!\n");
+                    customErrorFunction("the type of the node does not match the type declared!");
                 }
             } else {
-                printf("ERROR: couldn't recognise the specified type declaration!\n");
-                exit(1);
+                customFatalErrorFunction("couldn't recognise the specified type declaration!");
             }
         }
     } else {
         if (node->initialised) {//node already stores a value
             //node has no type defined, but it stores a value, this should be an impossible case
-            printf("ERROR: The node %s currently stores a value, but has no type defined!\n", node->id);
+            if(logSwitch){
+                printf("ERROR: The node %s currently stores a value, but has no type defined!\n", node->id);
+            }
             exit(1);
         } else { //node stores no value
             node->initialised = true;
@@ -325,10 +373,10 @@ symbol_table * completeTypedAssign (char* type, char* id, struct  variable expre
                 if (expression.type == INTEGER_TYPE) {
                     node->value.integer_val = expression.integer_val;
                 } else if (expression.type == DOUBLE_TYPE) {
-                    printf("Warning: casting double to integer, approximation may occur!\n");
+                    customWarningFunction("casting double to integer, approximation may occur!");
                     node->value.integer_val = (int) expression.double_val;
                 } else {
-                    printf("Error: could not recognise the type of the expression!\n");
+                    customErrorFunction("could not recognise the type of the expression!");
                 }
             } else if (strcmp("double", type) == 0) {
                 node->value.type = DOUBLE_TYPE;
@@ -337,10 +385,10 @@ symbol_table * completeTypedAssign (char* type, char* id, struct  variable expre
                 } else if (expression.type == INTEGER_TYPE) {
                     node->value.double_val = (double) expression.integer_val;
                 } else {
-                    printf("Error: could not recognise the type of the expression!\n");
+                    customErrorFunction("could not recognise the type of the expression!");
                 }
             } else {
-                printf("Error: could not recognise the type declared!\n");
+                customErrorFunction("could not recognise the type declared!");
             }
         }
     }
@@ -366,10 +414,10 @@ symbol_table * completeTypedShorthand(char *type, char *id, char* shorthand, str
                         } else if (strcmp(shorthand, "div_ass") == 0) {
                             node->value.integer_val = tmp / expression.integer_val;
                         } else {
-                            printf("Error: Could not recognise the shorthand operation!\n");
+                            customErrorFunction("Could not recognise the shorthand operation!");
                         }
                     } else if (expression.type == DOUBLE_TYPE) {
-                        printf("Warning: casting double to integer, approximation may occur!\n");
+                        customWarningFunction("casting double to integer, approximation may occur!");
                         int tmp = (int) node->value.integer_val;
                         if (strcmp(shorthand, "multi_ass") == 0) {
                             node->value.integer_val = (int) tmp * expression.double_val;
@@ -380,14 +428,14 @@ symbol_table * completeTypedShorthand(char *type, char *id, char* shorthand, str
                         } else if (strcmp(shorthand, "div_ass") == 0) {
                             node->value.integer_val = (int) tmp / expression.double_val;
                         } else {
-                            printf("Error: Could not recognise the shorthand operation!\n");
+                            customErrorFunction("Could not recognise the shorthand operation!");
                         }
                     } else {
                         node->initialised = false;
-                        printf("Error: could not recognise the type of the expression!\n");
+                        customErrorFunction("could not recognise the type of the expression!");
                     }
                 } else {
-                    printf("Error: the type of the node does not match the type declared!\n");
+                    customErrorFunction("the type of the node does not match the type declared!");
                 }
             } else if (strcmp(type, "double") == 0) {
                 if (node->value.type == DOUBLE_TYPE) {
@@ -403,7 +451,7 @@ symbol_table * completeTypedShorthand(char *type, char *id, char* shorthand, str
                         } else if (strcmp(shorthand, "div_ass") == 0) {
                             node->value.double_val = tmp / expression.double_val;
                         } else {
-                            printf("Error: Could not recognise the shorthand operation!\n");
+                            customErrorFunction("Could not recognise the shorthand operation!");
                         }
                     } else if (expression.type == INTEGER_TYPE) {
                         node->initialised = true;
@@ -417,17 +465,16 @@ symbol_table * completeTypedShorthand(char *type, char *id, char* shorthand, str
                         } else if (strcmp(shorthand, "div_ass") == 0) {
                             node->value.double_val = (double) tmp / expression.integer_val;
                         } else {
-                            printf("Error: Could not recognise the shorthand operation!\n");
+                            customErrorFunction("Could not recognise the shorthand operation!");
                         }
                     } else {
-                        printf("Error: could not recognise the type of the expression!\n");
+                        customErrorFunction("could not recognise the type of the expression!");
                     }
                 } else {
-                    printf("Error: the type of the node does not match the type declared!\n");
+                    customErrorFunction("the type of the node does not match the type declared!");
                 }
             } else {
-                printf("ERROR: couldn't recognise the specified type declaration!\n");
-                exit(1);
+                customFatalErrorFunction("couldn't recognise the specified type declaration!");
             }
         } else {//node stores no value
             if (strcmp(type, "integer") == 0) {
@@ -436,14 +483,14 @@ symbol_table * completeTypedShorthand(char *type, char *id, char* shorthand, str
                     if (expression.type == INTEGER_TYPE) { //everything is integer, assign the value
                         node->value.integer_val = expression.integer_val;
                     } else if (expression.type == DOUBLE_TYPE) { //cast double value to int with warning
-                        printf("Warning: casting double to integer, approximation may occur!\n");
+                        customWarningFunction("casting double to integer, approximation may occur!");
                         node->value.integer_val = (int) expression.double_val;
                     } else {
                         node->initialised = false;
-                        printf("Error: could not recognise the type of the expression!\n");
+                        customErrorFunction("could not recognise the type of the expression!");
                     }
                 } else {
-                    printf("Error: the type of the node does not match the type declared!\n");
+                    customErrorFunction("the type of the node does not match the type declared!");
                 }
             } else if (strcmp(type, "double") == 0) {
                 if (node->value.type == DOUBLE_TYPE) {
@@ -454,21 +501,22 @@ symbol_table * completeTypedShorthand(char *type, char *id, char* shorthand, str
                         node->initialised = true;
                         node->value.double_val = (double) expression.integer_val;
                     } else {
-                        printf("Error: could not recognise the type of the expression!\n");
+                        customErrorFunction("could not recognise the type of the expression!");
                     }
                 } else {
-                    printf("Error: the type of the node does not match the type declared!\n");
+                    customErrorFunction("the type of the node does not match the type declared!");
                 }
             } else {
-                printf("ERROR: couldn't recognise the specified type declaration!\n");
-                exit(1);
+                customFatalErrorFunction("couldn't recognise the specified type declaration!");
             }
-            printf("Warning: the variable you declared was not holding any value! Assigning the value to the variable itself\n");
+            customWarningFunction("the variable you declared was not holding any value! Assigning the value to the variable itself");
         }
     } else {
         if (node->initialised) {//node already stores a value
             //node has no type defined, but it stores a value, this should be an impossible case
-            printf("ERROR: The node %s currently stores a value, but has no type defined!\n", node->id);
+            if(logSwitch){
+                printf("ERROR: The node %s currently stores a value, but has no type defined!\n", node->id);
+            }
             exit(1);
         } else { //node stores no value
             node->initialised = true;
@@ -478,10 +526,10 @@ symbol_table * completeTypedShorthand(char *type, char *id, char* shorthand, str
                 if (expression.type == INTEGER_TYPE) {
                     node->value.integer_val = expression.integer_val;
                 } else if (expression.type == DOUBLE_TYPE) {
-                    printf("Warning: casting double to integer, approximation may occur!\n");
+                    customWarningFunction("casting double to integer, approximation may occur!");
                     node->value.integer_val = (int) expression.double_val;
                 } else {
-                    printf("Error: could not recognise the type of the expression!\n");
+                    customErrorFunction("could not recognise the type of the expression!");
                 }
             } else if (strcmp(type, "double") == 0) {
                 node->value.type = DOUBLE_TYPE;
@@ -490,12 +538,12 @@ symbol_table * completeTypedShorthand(char *type, char *id, char* shorthand, str
                 } else if (expression.type == INTEGER_TYPE) {
                     node->value.double_val = (double) expression.integer_val;
                 } else {
-                    printf("Error: could not recognise the type of the expression!\n");
+                    customErrorFunction("could not recognise the type of the expression!");
                 }
             } else {
-                printf("Error: could not recognise the type declared!\n");
+                customErrorFunction("could not recognise the type declared!");
             }
-            printf("Warning: the variable you declared was not holding any value! Assigning the value to the variable itself\n");
+            customWarningFunction("the variable you declared was not holding any value! Assigning the value to the variable itself");
         }
     }
     return node;
@@ -512,10 +560,12 @@ symbol_table * completeUntypedAssign(char *id, struct variable expression){
                 } else if (expression.type == DOUBLE_TYPE) {
                     node->initialised = true;
                     node->value.integer_val = (int) expression.double_val;
-                    printf("Warning: casting the double result to an integer!");
+                    customWarningFunction("casting the double result to an integer!");
                 } else {
-                    printf("Error: type mismatch! Node %s has type %i (integer), but the expression has type %i instead!\n",
-                           node->id, node->value.type, expression.type);
+                    if(logSwitch){
+                        printf("Error: type mismatch! Node %s has type %i (integer), but the expression has type %i instead!\n",
+                               node->id, node->value.type, expression.type);
+                    }
                 }
             } else if (node->value.type == DOUBLE_TYPE) {
                 if (expression.type == INTEGER_TYPE) {
@@ -524,13 +574,16 @@ symbol_table * completeUntypedAssign(char *id, struct variable expression){
                 } else if (expression.type == DOUBLE_TYPE) {
                     node->initialised = true;
                     node->value.double_val = expression.double_val;
-                }
-                {
-                    printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",
-                           node->id, node->value.type, expression.type);
+                } else {
+                    if(logSwitch){
+                        printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",
+                               node->id, node->value.type, expression.type);
+                    }
                 }
             } else {
-                printf("Error: the type of node %s could not be recognised!\n", node->id);
+                if(logSwitch){
+                    printf("Error: the type of node %s could not be recognised!\n", node->id);
+                }
                 exit(1);
             }
         } else {
@@ -538,24 +591,34 @@ symbol_table * completeUntypedAssign(char *id, struct variable expression){
             if (node->value.type == expression.type) {
                 if (node->value.type == INTEGER_TYPE) {
                     node->value.integer_val = expression.integer_val;
-                    printf("Info: Updated variable %s to the new value %i", node->id, expression.integer_val);
+                    if(logSwitch){
+                        printf("Info: Updated variable %s to the new value %i", node->id, expression.integer_val);
+                    }
                 } else if (node->value.type == DOUBLE_TYPE) {
                     node->value.double_val = expression.double_val;
-                    printf("Info: Updated variable %s to the new value %f", node->id, expression.double_val);
+                    if(logSwitch){
+                        printf("Info: Updated variable %s to the new value %f", node->id, expression.double_val);
+                    }
                 } else {
-                    printf("Error: the type of node %s could not be recognised!\n", node->id);
+                    if(logSwitch){
+                        printf("Error: the type of node %s could not be recognised!\n", node->id);
+                    }
                     exit(1);
                 }
             } else {
-                printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",
-                       node->id, node->value.type, expression.type);
+                if(logSwitch){
+                    printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",
+                           node->id, node->value.type, expression.type);
+                }
                 exit(1);
             }
         }
     } else {
         if (node->initialised) {
             //node has no type defined, but it stores a value, this should be an impossible case
-            printf("Error: The node %s currently stores a value, but has no type defined!\n", node->id);
+            if(logSwitch){
+                printf("Error: The node %s currently stores a value, but has no type defined!\n", node->id);
+            }
             exit(1);
         } else {
             //node has neither type defined nor it stores a value
@@ -570,8 +633,7 @@ symbol_table * completeUntypedAssign(char *id, struct variable expression){
                 node->value.double_val = expression.double_val;
                 node->type_declared = true;
             } else {
-                printf("ERROR: the type of the expression could not be recognised!\n");
-                exit(1);
+                customFatalErrorFunction("the type of the expression could not be recognised!");
             }
         }
     }
@@ -596,10 +658,10 @@ symbol_table * completeUntypedShorthand(char *id, char *shorthand, struct variab
                     } else if (strcmp(shorthand, "div_ass") == 0) {
                         node->value.integer_val = tmp / expression.integer_val;
                     } else {
-                        printf("Error: Could not recognise the shorthand operation!\n");
+                        customErrorFunction("Could not recognise the shorthand operation!");
                     }
                 } else if (expression.type == DOUBLE_TYPE) {
-                    printf("Warning: casting double to integer, approximation may occur!\n");
+                    customWarningFunction("casting double to integer, approximation may occur!");
                     int tmp = (int) node->value.integer_val;
                     if (strcmp(shorthand, "multi_ass") == 0) {
                         node->value.integer_val = (int) tmp * expression.double_val;
@@ -610,11 +672,11 @@ symbol_table * completeUntypedShorthand(char *id, char *shorthand, struct variab
                     } else if (strcmp(shorthand, "div_ass") == 0) {
                         node->value.integer_val = (int) tmp / expression.double_val;
                     } else {
-                        printf("Error: Could not recognise the shorthand operation!\n");
+                        customErrorFunction("Could not recognise the shorthand operation!");
                     }
                 } else {
                     node->initialised = false;
-                    printf("Error: could not recognise the type of the expression!\n");
+                    customErrorFunction("could not recognise the type of the expression!");
                 }
             } else if (node->value.type == DOUBLE_TYPE) {
                 if (expression.type == DOUBLE_TYPE) {//everything is double, assign the value
@@ -629,7 +691,7 @@ symbol_table * completeUntypedShorthand(char *id, char *shorthand, struct variab
                     } else if (strcmp(shorthand, "div_ass") == 0) {
                         node->value.double_val = tmp / expression.double_val;
                     } else {
-                        printf("Error: Could not recognise the shorthand operation!\n");
+                        customErrorFunction("could not recognise the shorthand operation!");
                     }
                 } else if (expression.type == INTEGER_TYPE) {
                     node->initialised = true;
@@ -643,13 +705,13 @@ symbol_table * completeUntypedShorthand(char *id, char *shorthand, struct variab
                     } else if (strcmp(shorthand, "div_ass") == 0) {
                         node->value.double_val = (double) tmp / expression.integer_val;
                     } else {
-                        printf("Error: Could not recognise the shorthand operation!\n");
+                        customErrorFunction("could not recognise the shorthand operation!");
                     }
                 } else {
-                    printf("Error: could not recognise the type of the expression!\n");
+                    customErrorFunction("could not recognise the type of the expression!");
                 }
             } else {
-                printf("Error: the type of the node does not match the type declared!\n");
+                customErrorFunction("the type of the node does not match the type declared!");
             }
         } else {
             //node has type defined but it stores no value
@@ -658,30 +720,38 @@ symbol_table * completeUntypedShorthand(char *id, char *shorthand, struct variab
                     node->initialised = true;
                     node->value.integer_val = expression.integer_val;
                 } else {
-                    printf("Error: type mismatch! Node %s has type %i (integer), but the expression has type %i instead!\n",
-                           node->id, node->value.type, expression.type);
+                    if(logSwitch){
+                        printf("Error: type mismatch! Node %s has type %i (integer), but the expression has type %i instead!\n",
+                               node->id, node->value.type, expression.type);
+                    }
                 }
             } else if (node->value.type == DOUBLE_TYPE) {
                 if (expression.type == INTEGER_TYPE) {
                     node->initialised = true;
                     node->value.double_val = expression.double_val;
                 } else {
-                    printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",
-                           node->id, node->value.type, expression.type);
+                    if(logSwitch){
+                        printf("Error: type mismatch! Node %s has type %i (double), but the expression has type %i instead!\n",
+                               node->id, node->value.type, expression.type);
+                    }
                 }
             } else {
-                printf("Error: the type of node %s could not be recognised!\n", node->id);
+                if(logSwitch){
+                    printf("ERROR: the type of node %s could not be recognised!\n", node->id);
+                }
                 exit(1);
             }
         }
     } else {
         if (node->initialised) {
             //node has no type defined, but it stores a value, this should be an impossible case
-            printf("Error: The node %s currently stores a value, but has no type defined!\n", node->id);
+            if(logSwitch){
+                printf("ERROR: The node %s currently stores a value, but has no type defined!\n", node->id);
+            }
             exit(1);
         } else {
             //node has neither type defined nor it stores a value
-            printf("Warning: the variable declared has no value stored, assigning the result instead!");
+            customWarningFunction("the variable declared has no value stored, assigning the result instead!");
             node->initialised = true;
             if (expression.type == INTEGER_TYPE) {
                 node->value.type = INTEGER_TYPE;
@@ -693,8 +763,7 @@ symbol_table * completeUntypedShorthand(char *id, char *shorthand, struct variab
                 node->type_declared = true;
             } else {
                 node->initialised = false;
-                printf("Error: the type of the expression could not be recognised!\n");
-                exit(1);
+                customErrorFunction("the type of the expression could not be recognised!");
             }
         }
     }
@@ -704,19 +773,21 @@ symbol_table * typedAssign(char *type, char *id){
     symbol_table *node = findOrAdd(id);
     if(node->type_declared==0){
         if(strcmp("integer",type)==0){
-            printf("Set the variable type to integer\n");
+            customLoggingFunction("set the variable type to integer");
             node->value.type=INTEGER_TYPE;
         } else if(strcmp("double",type)==0){
             node->value.type=DOUBLE_TYPE;
-            printf("Set the variable type to double\n");
+            customLoggingFunction("Set the variable type to double");
         }
         node->type_declared=1;
     } else {
         char* node_type = varType(node->value);
         if(strcmp(node_type,type)==0){
-            printf("Error: the variable you specified is already defined with type %s!\n",node_type);
+            if(logSwitch){
+                printf("Error: the variable you specified is already defined with type %s!\n",node_type);
+            }
         } else {
-            printf("Info: the variable you specified is already defined with the same type!\n");
+            customLoggingFunction("the variable you specified is already defined with the same type!");
         }
     }
     return node;
@@ -793,10 +864,9 @@ struct variable sumOrConcat(struct variable n1, struct variable n2){
     } else if (n1.type == DOUBLE_TYPE && n2.type == DOUBLE_TYPE){
         result.double_val = n1.double_val + n2.double_val;
         result.type = DOUBLE_TYPE;
-    } else{
+    } else {
         result.type = 9; // ERROR TYPE
     }
-
     return result;
 }
 
@@ -906,14 +976,17 @@ struct variable divide(struct variable n1, struct variable n2){
 struct variable inc(struct variable n){
     struct variable result;
     if(n.type==STRING_TYPE){
-        printf("cannot increment a string!");
-        exit(0);
+        customErrorFunction("cannot increment a string!");
     } else if (n.type == INTEGER_TYPE){
         result.integer_val = n.integer_val+1;
         result.type = INTEGER_TYPE;
     } else if (n.type == DOUBLE_TYPE){
         result.double_val = n.double_val+1;
         result.type = DOUBLE_TYPE;
+    } else if (n.type == UNDEFINED_TYPE){
+        customLoggingFunction("unable to increment nothing!");
+    } else {
+        customErrorFunction("the type of the expression in the increment operation was not recognised");
     }
     return result;
 }
@@ -921,14 +994,17 @@ struct variable inc(struct variable n){
 struct variable dec(struct variable n){
     struct variable result;
     if(n.type==STRING_TYPE){
-        printf("cannot decrement a string!");
-        exit(0);
+        customErrorFunction("cannot decrement a string!");
     } else if (n.type == INTEGER_TYPE){
         result.integer_val = n.integer_val-1;
         result.type = INTEGER_TYPE;
     } else if (n.type == DOUBLE_TYPE){
         result.double_val = n.double_val-1;
         result.type = DOUBLE_TYPE;
+    } else if (n.type == UNDEFINED_TYPE){
+        customLoggingFunction("unable to decrement nothing!");
+    } else {
+        customErrorFunction("the type of the expression in the decrement operation was not recognised");
     }
     return result;
 }
