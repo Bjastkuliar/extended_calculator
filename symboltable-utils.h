@@ -146,7 +146,7 @@ void printNode(symbol_table *nodeToPrint){
             } else if(nodeToPrint->value.type==STRING_TYPE){
                 val = strcat("(String value) %s",nodeToPrint->value.string_val);
             } else {
-                printf("Error: error while trying to access the value stored in node %s", nodeToPrint->id);
+                printf("Error: error while trying to access the value stored in node %s\n", nodeToPrint->id);
                 exit(1);
             }
         } else {
@@ -232,7 +232,7 @@ void printResult(struct variable var){
     } else if(var.type == DOUBLE_TYPE){
         printf("Result: %f\n",var.double_val);
     } else if (var.type == UNDEFINED_TYPE){
-        printf("Result is uninitialised!\nUse the print ID command to print the information about a specific ID");
+        printf("Result is uninitialised!\nUse the print ID command to print the information about a specific ID\n");
     } else {
         printf("Error while trying to print variable of type %i!\n",var.type);
         exit(1);
@@ -681,7 +681,7 @@ symbol_table * completeUntypedShorthand(char *id, char *shorthand, struct variab
             exit(1);
         } else {
             //node has neither type defined nor it stores a value
-            printf("Warning: the variable declared has no value stored, assigning the result instead!");
+            printf("Warning: the variable declared has no value stored, assigning the result instead!\n");
             node->initialised = true;
             if (expression.type == INTEGER_TYPE) {
                 node->value.type = INTEGER_TYPE;
@@ -880,7 +880,7 @@ struct variable divide(struct variable n1, struct variable n2){
 
     struct variable result;
     if(n2.double_val == 0.0 || n2.integer_val == 0|| n2.type == UNDEFINED_TYPE){
-        printf("cannot divide by 0");
+        printf("ERROR: cannot divide by 0");
         exit(0);
     }
     else if (n1.type == INTEGER_TYPE && n2.type == INTEGER_TYPE){
@@ -914,9 +914,9 @@ struct variable inc(struct variable n){
         result.double_val = n.double_val+1;
         result.type = DOUBLE_TYPE;
     } else if (n.type == UNDEFINED_TYPE){
-        printf("cannot increment nothing!");
+        printf("cannot increment nothing!\n");
     } else {
-        printf("Failed to recognise type of variable to be incremented!");
+        printf("Failed to recognise type of variable to be incremented!\n");
     }
     return result;
 }
@@ -924,7 +924,7 @@ struct variable inc(struct variable n){
 struct variable dec(struct variable n){
     struct variable result;
     if(n.type==STRING_TYPE){
-        printf("cannot decrement a string!");
+        printf("cannot decrement a string!\n");
         exit(0);
     } else if (n.type == INTEGER_TYPE){
         result.integer_val = n.integer_val-1;
@@ -933,9 +933,9 @@ struct variable dec(struct variable n){
         result.double_val = n.double_val-1;
         result.type = DOUBLE_TYPE;
     } else if (n.type == UNDEFINED_TYPE){
-        printf("cannot decrement nothing!");
+        printf("cannot decrement nothing!\n");
     } else {
-        printf("Failed to recognise type of variable to be decremented!");
+        printf("Failed to recognise type of variable to be decremented!\n");
     }
     return result;
 }
