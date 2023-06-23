@@ -802,7 +802,21 @@ struct variable sumOrConcat(struct variable n1, struct variable n2){
 
 struct variable sub(struct variable n1, struct variable n2){
     struct variable result;
-
+    if(n1.type == UNDEFINED_TYPE){
+        result.type = n2.type;
+        if(n2.type == INTEGER_TYPE){
+            result.integer_val = n2.integer_val;
+        } else if(n2.type == DOUBLE_TYPE){
+            result.double_val = n2.double_val;
+        }
+    } else if(n2.type == UNDEFINED_TYPE){
+        result.type = n1.type;
+        if(n1.type == INTEGER_TYPE){
+            result.integer_val = n1.integer_val;
+        } else if(n1.type == DOUBLE_TYPE){
+            result.double_val = n1.double_val;
+        }
+    }
     if (n1.type == INTEGER_TYPE && n2.type == INTEGER_TYPE){
         result.integer_val = n1.integer_val - n2.integer_val;
         result.type = INTEGER_TYPE;
@@ -826,6 +840,21 @@ struct variable sub(struct variable n1, struct variable n2){
 struct variable multi(struct variable n1, struct variable n2){
 
     struct variable result;
+    if(n1.type == UNDEFINED_TYPE){
+        result.type = n2.type;
+        if(n2.type == INTEGER_TYPE){
+            result.integer_val = 0;
+        } else if(n2.type == DOUBLE_TYPE){
+            result.double_val = 0;
+        }
+    } else if(n2.type == UNDEFINED_TYPE){
+        result.type = n1.type;
+        if(n1.type == INTEGER_TYPE){
+            result.integer_val = 0;
+        } else if(n1.type == DOUBLE_TYPE){
+            result.double_val = 0;
+        }
+    }
 
     if (n1.type == INTEGER_TYPE && n2.type == INTEGER_TYPE){
         result.integer_val = n1.integer_val * n2.integer_val;
@@ -850,7 +879,7 @@ struct variable multi(struct variable n1, struct variable n2){
 struct variable divide(struct variable n1, struct variable n2){
 
     struct variable result;
-    if(n2.double_val == 0.0 || n2.integer_val == 0){
+    if(n2.double_val == 0.0 || n2.integer_val == 0|| n2.type == UNDEFINED_TYPE){
         printf("cannot divide by 0");
         exit(0);
     }
@@ -882,7 +911,7 @@ struct variable inc(struct variable n){
     } else if (n.type == INTEGER_TYPE){
         result.integer_val = n.integer_val+1;
         result.type = INTEGER_TYPE;
-    } else {
+    } else if (n.type == DOUBLE_TYPE){
         result.double_val = n.double_val+1;
         result.type = DOUBLE_TYPE;
     }
@@ -897,7 +926,7 @@ struct variable dec(struct variable n){
     } else if (n.type == INTEGER_TYPE){
         result.integer_val = n.integer_val-1;
         result.type = INTEGER_TYPE;
-    } else {
+    } else if (n.type == DOUBLE_TYPE){
         result.double_val = n.double_val-1;
         result.type = DOUBLE_TYPE;
     }
