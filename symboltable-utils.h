@@ -906,14 +906,17 @@ struct variable divide(struct variable n1, struct variable n2){
 struct variable inc(struct variable n){
     struct variable result;
     if(n.type==STRING_TYPE){
-        printf("cannot increment a string!");
-        exit(0);
+        printf("cannot increment a string!\n");
     } else if (n.type == INTEGER_TYPE){
         result.integer_val = n.integer_val+1;
         result.type = INTEGER_TYPE;
     } else if (n.type == DOUBLE_TYPE){
         result.double_val = n.double_val+1;
         result.type = DOUBLE_TYPE;
+    } else if (n.type == UNDEFINED_TYPE){
+        printf("cannot increment nothing!");
+    } else {
+        printf("Failed to recognise type of variable to be incremented!");
     }
     return result;
 }
@@ -929,6 +932,10 @@ struct variable dec(struct variable n){
     } else if (n.type == DOUBLE_TYPE){
         result.double_val = n.double_val-1;
         result.type = DOUBLE_TYPE;
+    } else if (n.type == UNDEFINED_TYPE){
+        printf("cannot decrement nothing!");
+    } else {
+        printf("Failed to recognise type of variable to be decremented!");
     }
     return result;
 }
@@ -936,7 +943,23 @@ struct variable dec(struct variable n){
 
 /*COMPARISON/LOGIC FUNCTIONS */
 bool greaterNum(struct variable n1, struct variable n2){
-    if (n1.type == INTEGER_TYPE && n2.type == INTEGER_TYPE){
+    if (n1.type == INTEGER_TYPE && n2.type == UNDEFINED_TYPE){
+        if (n1.integer_val > 0){
+            return true;
+        }
+    } else if (n1.type == DOUBLE_TYPE && n2.type == UNDEFINED_TYPE){
+        if (n1.double_val > 0){
+            return true;
+        }
+    } else if (n1.type == UNDEFINED_TYPE && n2.type == INTEGER_TYPE){
+        if (0 > n2.integer_val){
+            return true;
+        }
+    } else if (n1.type == UNDEFINED_TYPE && n2.type == DOUBLE_TYPE){
+        if (0 > n2.double_val){
+            return true;
+        }
+    } else if (n1.type == INTEGER_TYPE && n2.type == INTEGER_TYPE){
         if (n1.integer_val > n2.integer_val){
             return true;
         }
@@ -957,6 +980,9 @@ bool greaterNum(struct variable n1, struct variable n2){
 }
 
 bool equal(struct variable n1, struct variable n2){
+    if(n1.type == UNDEFINED_TYPE && n2.type == UNDEFINED_TYPE){
+        return true;
+    }
     if (n1.type == INTEGER_TYPE && n2.type == INTEGER_TYPE){
         if (n1.integer_val == n2.integer_val){
             return true;
