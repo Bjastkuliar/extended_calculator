@@ -123,7 +123,8 @@ expr  : expr '+' expr  	{$$ = sumOrConcat($1,$3);}
       | val
       ;
 
-/*This production returns the values of the specific tokens, in the case of an identifier, it extrapolates the
+/*This production returns the values of the specific tokens,
+// in the case of an identifier, it extrapolates the
 // value contained and returns that*/
 val: INTEGER_VAL    	{struct variable data;
            			 data.type = INTEGER_TYPE;
